@@ -1,3 +1,14 @@
+---
+title: Hybrid RAG Document Assistant
+emoji: 📄
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: 1.49.0
+app_file: app.py
+pinned: false
+---
+
 # Hybrid RAG Document Assistant
 
 A professional document-based Retrieval-Augmented Generation (RAG) assistant built with Streamlit. The app supports PDF, DOCX, TXT, and PPTX uploads, extracts document text, retrieves relevant context using hybrid search, and returns clear source-grounded answers.
