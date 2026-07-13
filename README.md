@@ -1,14 +1,3 @@
----
-title: Hybrid RAG Document Assistant
-emoji: 📄
-colorFrom: blue
-colorTo: indigo
-sdk: streamlit
-sdk_version: 1.49.0
-app_file: app.py
-pinned: false
----
-
 # Hybrid RAG Document Assistant
 
 A professional document-based Retrieval-Augmented Generation (RAG) assistant built with Streamlit. The app supports PDF, DOCX, TXT, and PPTX uploads, extracts document text, retrieves relevant context using hybrid search, and returns clear source-grounded answers.
@@ -119,6 +108,28 @@ streamlit run app.py
 ```
 
 Then open the local Streamlit URL shown in your terminal.
+
+## Deployment
+
+This app can be deployed on Streamlit Community Cloud.
+
+Use these deployment settings:
+
+```text
+Repository: Hybrid-RAG-Document-Assistant
+Branch: main
+Main file path: app.py
+```
+
+The app works in Retrieval-only mode without any API keys. Optional OpenAI, Claude, or Gemini API keys can be added through Streamlit secrets or a local `.env` file.
+
+Streamlit secrets example:
+
+```toml
+OPENAI_API_KEY = "your_openai_api_key_here"
+ANTHROPIC_API_KEY = "your_anthropic_api_key_here"
+GEMINI_API_KEY = "your_gemini_api_key_here"
+```
 
 ## Running Smoke Tests
 
