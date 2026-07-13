@@ -1,0 +1,7 @@
+This document is about artificial intelligence engineering.
+
+The main goal of this project is to build a Hybrid RAG Document Assistant.
+
+The system should read documents, split them into chunks, search using semantic and keyword retrieval, and answer with citations.
+
+This is the first test document.

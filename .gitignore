@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.DS_Store
+**/__pycache__/
+.streamlit/
+uploaded_files/
+data/
+*.pdf
+*.docx
+*.pptx

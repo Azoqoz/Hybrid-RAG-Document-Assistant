@@ -1,0 +1,41 @@
+Jordan Avery
+Sample Candidate Profile
+This is a fictional CV created only for testing a document assistant. It does not contain real personal information.
+
+Contact
+Email: sample.candidate@example.com
+Phone: 000-000-0000
+Location: Example City
+
+Professional Summary
+AI engineering student with experience building Python prototypes, retrieval systems, and data-processing tools. Interested in machine learning applications, document search, evaluation, and responsible AI workflows.
+
+Education
+Bachelor of Science in Computer Science, Example University
+Relevant coursework included machine learning, databases, software engineering, data structures, natural language processing, and cloud computing.
+
+Skills
+Python, Streamlit, SQL, Git, machine learning basics, natural language processing, data cleaning, document parsing, prompt design, and evaluation. Familiar with embeddings, vector search, BM25 keyword search, reranking, and citation-focused RAG systems.
+
+Tools
+VS Code, Jupyter Notebook, GitHub, NumPy, pandas, scikit-learn, Streamlit, FAISS, sentence-transformers, and basic API integration.
+
+Projects
+Hybrid RAG Document Assistant: Built a prototype that loads PDF, DOCX, and TXT files, splits text into chunks, runs semantic search and keyword search, reranks candidate results, and generates clean answers with source labels.
+
+Course Recommendation Prototype: Created a small application that filtered courses by interests, prerequisites, and skill level. The project included a simple user interface and structured test data.
+
+Experience
+AI Engineering Intern, Example Analytics Lab
+Assisted with data preparation, experiment tracking, model evaluation, and documentation. Built small scripts to clean text data and compare retrieval results for internal demos.
+
+Student Developer, Example Capstone Team
+Collaborated with a team to design a document search tool. Helped implement file loading, chunking, search interfaces, and summary output for user testing.
+
+Certifications
+Foundations of Machine Learning Certificate
+Python for Data Analysis Certificate
+Introductory Cloud Tools Certificate
+
+Additional Activities
+Participated in AI study groups, code reviews, and project demonstrations. Prepared short technical writeups explaining retrieval augmented generation, embeddings, and evaluation methods.

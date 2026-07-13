@@ -1,0 +1,64 @@
+[Slide 1]
+Title: Introduction to LISP
+Content:
+- LISP is a high-level programming language associated with symbolic processing and AI.
+- The lecture introduces LISP history, syntax, program structure, variables, operators, decisions, and loops.
+
+[Slide 2]
+Title: Outline
+Content:
+- Introduction
+- Lisp Basic Syntax
+- LISP – Operators
+- LISP - Decision Making
+- LISP – Loops
+
+[Slide 3]
+Title: Applications of LISP
+Content:
+- LISP is used in symbolic processing, language research, and artificial intelligence.
+- This slide provides historical context but is not part of the main lecture outline.
+
+[Slide 4]
+Title: Local Environment Setup
+Content:
+- Students may use an online interpreter or local Common Lisp tooling.
+- Setup details support the programming examples.
+
+[Slide 5]
+Title: LISP Program Structure
+Content:
+- LISP programs are built from symbolic expressions.
+- Expressions may contain atoms, lists, and strings.
+- Code is commonly written as fully parenthesized forms.
+
+[Slide 6]
+Title: Lisp Basic Syntax
+Content:
+- LISP uses prefix notation.
+- A function or operator appears before its operands.
+- Parentheses define the structure of each expression.
+
+[Slide 7]
+Title: Lisp Variables
+Content:
+- Variables and constants store values used by expressions.
+- The lecture explains naming, assignment, and simple values.
+
+[Slide 8]
+Title: LISP Operators
+Content:
+- Common Lisp includes arithmetic operators.
+- It also includes comparison operators and logical operators.
+
+[Slide 9]
+Title: LISP Decision Making
+Content:
+- Decision-making constructs include cond, if, when, and case.
+- These constructs control which expression is evaluated.
+
+[Slide 10]
+Title: LISP Loops
+Content:
+- Loop constructs include loop, loop for, do, dotimes, and dolist.
+- Iteration helps repeat expressions over values or lists.

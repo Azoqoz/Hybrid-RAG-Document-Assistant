@@ -1,0 +1,15 @@
+Retrieval augmented generation, often called RAG, is an architecture for answering questions with evidence from documents. A RAG system first loads documents, splits them into chunks, searches for relevant passages, and then uses the retrieved context to produce a grounded answer. This makes the answer more useful than a generic model response because the system can refer to information that was actually present in the uploaded files.
+
+Embeddings are numerical representations of text. They help compare the meaning of a user question with the meaning of document sections, even when the wording is different. For example, a question about document search can match a passage about retrieval because both ideas are semantically related. Embeddings are often stored in a vector database or a FAISS index so the system can quickly find chunks with similar meaning.
+
+Vector databases are useful when a project contains many chunks from many files. They store vectors and support fast similarity search. In a document assistant, vector search helps retrieve passages that are conceptually related to the user query. This is especially important when a user asks a broad or natural-language question that does not reuse the exact words from the document.
+
+Keyword search is also important. BM25 is a classic keyword-ranking method that scores text based on query terms, term frequency, and document frequency. BM25 is useful for exact terms, acronyms, names, codes, and technical phrases. A good RAG system often combines semantic retrieval with BM25 keyword search so it can find both meaning-based matches and exact-word matches.
+
+Hybrid search combines the strengths of semantic search and keyword search. Semantic scores can identify passages with similar meaning, while BM25 scores can prioritize exact matches. The project can normalize both scores and combine them into a hybrid score. This gives the assistant a better candidate list before the final answer is generated.
+
+Reranking is a second-stage retrieval step. After hybrid search returns candidate chunks, a reranker compares the query and each candidate more carefully. Cross-encoder reranking can improve result quality because it evaluates the relationship between the full query and the full chunk text. The top reranked chunks are usually better evidence for answer generation.
+
+Citations are essential in a RAG assistant. They show which file or document section supported the answer. Citations help users trust the response and verify the source material. They also help developers debug retrieval quality because they can inspect whether the answer was based on the correct evidence.
+
+Answer generation should use only the retrieved context. If the uploaded documents do not contain enough information, the assistant should say so instead of inventing facts. A clean user-facing answer should be readable, concise, and supported by clear source labels. Technical details such as chunk identifiers and rerank scores can remain available in a developer inspection view.

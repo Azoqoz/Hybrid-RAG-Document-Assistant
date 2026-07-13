@@ -1,0 +1,24 @@
+Title: Evaluating Retrieval Methods for Document Question Answering
+
+Abstract
+This report studies how retrieval methods affect the quality of answers in a document question answering system. The work compares semantic search, BM25 keyword search, hybrid search, and reranking. The goal is to understand how each retrieval stage contributes to relevant evidence selection.
+
+Introduction
+Document assistants need to locate useful information before generating an answer. If retrieval fails, the final answer may be incomplete or unsupported. Retrieval augmented generation addresses this problem by grounding answers in document chunks that are selected for relevance.
+
+Methodology
+The methodology uses a small collection of synthetic documents about AI engineering, RAG systems, and professional profiles. Each document is split into overlapping chunks. Semantic search uses sentence embeddings and vector similarity. Keyword search uses BM25. Hybrid search combines normalized semantic and keyword scores. Reranking then sorts the best candidates using a cross-encoder model.
+
+Findings
+Semantic search is effective for broad conceptual questions because it can match related ideas even when wording differs. BM25 is effective for exact terms such as model names, acronyms, and section labels. Hybrid search improves coverage by using both signals. Reranking improves precision by comparing the full query against each candidate chunk.
+
+Discussion
+Citations are important because they make the answer traceable. A user should be able to inspect the source file and supporting passage. Developer-facing chunk details are useful for debugging, but user-facing answers should present sources in a clear and friendly format.
+
+Conclusion
+The report concludes that a staged retrieval pipeline improves document question answering. Loading, chunking, semantic search, keyword search, hybrid scoring, reranking, and clean answer generation each contribute to the final system quality.
+
+References
+Robertson, S. and Zaragoza, H. The Probabilistic Relevance Framework: BM25 and Beyond.
+Reimers, N. and Gurevych, I. Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.
+Lewis, P. et al. Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.
