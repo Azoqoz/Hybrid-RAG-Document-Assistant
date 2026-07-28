@@ -197,9 +197,6 @@ This project demonstrates practical AI Engineering skills across the full RAG wo
 
 It is designed as a portfolio-ready example of how to build a useful AI assistant while keeping technical complexity hidden from the user-facing interface.
 
-## Resume Bullet
-
-Built a Hybrid RAG Document Assistant that supports PDF, DOCX, TXT, and PPTX ingestion with FAISS semantic search, BM25 keyword retrieval, hybrid ranking, Cross-Encoder reranking, lecture summary mode, source-grounded answers, and automated smoke tests.
 
 ## Future Improvements
 
