@@ -71,38 +71,45 @@ Questions that require external or live information, such as weather updates, ar
 
 ## System Architecture
 
-```text
-Document Upload
-      |
-      v
-Text Extraction
-      |
-      v
-Document Chunking
-      |
-      +-----------------------+
-      |                       |
-      v                       v
-Semantic Search          BM25 Keyword Search
-      |                       |
-      +-----------+-----------+
-                  |
-                  v
-          Hybrid Retrieval
-                  |
-                  v
-       Cross-Encoder Reranking
-                  |
-                  v
-       Answer Provider Selection
-          /               \
-         v                 v
-LLM Generation     Retrieval-Only Fallback
-         \                 /
-          +-------+-------+
-                  |
-                  v
-       Source-Grounded Answer
+```mermaid
+flowchart LR
+    subgraph INGEST["Document Processing"]
+        direction TB
+        A1[Upload PDF, DOCX, TXT, or PPTX]
+        A2[Extract Document Text]
+        A3[Split Content into Chunks]
+
+        A1 --> A2 --> A3
+    end
+
+    subgraph RETRIEVE["Hybrid Retrieval"]
+        direction TB
+        B1[Semantic Search with FAISS]
+        B2[BM25 Keyword Search]
+        B3[Merge Retrieval Results]
+        B4[Cross-Encoder Reranking]
+
+        B1 --> B3
+        B2 --> B3
+        B3 --> B4
+    end
+
+    subgraph ANSWER["Answer Generation"]
+        direction TB
+        C1[Select Answer Provider]
+        C2[OpenAI, Claude, or Gemini]
+        C3[Retrieval-Only Fallback]
+        C4[Source-Grounded Answer]
+
+        C1 --> C2
+        C1 --> C3
+        C2 --> C4
+        C3 --> C4
+    end
+
+    A3 --> B1
+    A3 --> B2
+    B4 --> C1
 ```
 
 ---
