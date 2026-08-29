@@ -4,6 +4,7 @@ from src.services.contracts import (
     RetrievalResult,
     UploadPayload,
 )
+from src.services.claims import ClaimMapper
 from src.services.corpus import InMemoryCorpusStore
 from src.services.ingestion import DocumentIngestionService
 from src.services.provider import ProviderService
@@ -20,11 +21,13 @@ class QueryService:
         ingestion_service: DocumentIngestionService | None = None,
         retrieval_service: RetrievalService | None = None,
         provider_service: ProviderService | None = None,
+        claim_mapper: ClaimMapper | None = None,
     ):
         self.corpus_store = corpus_store or InMemoryCorpusStore()
         self.ingestion_service = ingestion_service or DocumentIngestionService()
         self.retrieval_service = retrieval_service or RetrievalService()
         self.provider_service = provider_service or ProviderService()
+        self.claim_mapper = claim_mapper or ClaimMapper()
 
     def create_corpus(self) -> str:
         return self.corpus_store.create().corpus_id
@@ -68,15 +71,20 @@ class QueryService:
 
         answer = self.provider_service.generate(provider, query, results)
         citations = [
-            self._citation_from_result(result)
-            for result in results[: self.CITATION_LIMIT]
+            self._citation_from_result(result, rerank_position)
+            for rerank_position, result in enumerate(
+                results[: self.CITATION_LIMIT],
+                start=1,
+            )
         ]
+        claims = self.claim_mapper.build(answer, citations, is_summary)
         return QueryResponse(
             corpus_id=corpus_id,
             query=query,
             provider=provider,
             is_summary=is_summary,
             answer=answer,
+            claims=claims,
             retrieval_results=results,
             citations=citations,
         )
@@ -87,17 +95,29 @@ class QueryService:
     def delete_corpus(self, corpus_id: str) -> bool:
         return self.corpus_store.delete(corpus_id)
 
-    def _citation_from_result(self, result: RetrievalResult) -> Citation:
+    def _citation_from_result(
+        self,
+        result: RetrievalResult,
+        rerank_position: int,
+    ) -> Citation:
         text = " ".join(result.text.split())
         if len(text) > self.CITATION_SNIPPET_LENGTH:
             text = text[: self.CITATION_SNIPPET_LENGTH].rstrip() + "..."
 
         return Citation(
+            citation_id=f"citation-{result.chunk_id:06d}",
             filename=result.filename,
             chunk_id=result.chunk_id,
-            text_snippet=text,
+            snippet=text,
             semantic_score=result.semantic_score,
             keyword_score=result.keyword_score,
             hybrid_score=result.hybrid_score,
             rerank_score=result.rerank_score,
+            rerank_position=(
+                rerank_position
+                if result.rerank_score is not None
+                else None
+            ),
+            page_number=result.page_number,
+            slide_number=result.slide_number,
         )

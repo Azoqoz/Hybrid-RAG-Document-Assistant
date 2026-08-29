@@ -44,18 +44,34 @@ class RetrievalResultResponse(BaseModel):
     keyword_score: float | None = None
     hybrid_score: float | None = None
     rerank_score: float | None = None
+    page_number: int | None = None
+    slide_number: int | None = None
 
 
 class CitationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    citation_id: str
     filename: str
     chunk_id: int
+    snippet: str
     text_snippet: str
     semantic_score: float | None = None
     keyword_score: float | None = None
     hybrid_score: float | None = None
     rerank_score: float | None = None
+    rerank_position: int | None = None
+    page_number: int | None = None
+    slide_number: int | None = None
+
+
+class ClaimResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    claim_id: str
+    text: str
+    citation_ids: list[str]
+    support_status: str | None = None
 
 
 class QueryResponse(BaseModel):
@@ -64,6 +80,7 @@ class QueryResponse(BaseModel):
     provider: str
     is_summary: bool
     answer: str
+    claims: list[ClaimResponse]
     retrieval_results: list[RetrievalResultResponse]
     citations: list[CitationResponse]
 

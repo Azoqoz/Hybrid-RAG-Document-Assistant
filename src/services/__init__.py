@@ -1,11 +1,13 @@
 from src.services.contracts import (
     Citation,
+    Claim,
     CorpusRecord,
     DocumentMetadata,
     QueryResponse,
     RetrievalResult,
     UploadPayload,
 )
+from src.services.claims import ClaimMapper
 from src.services.corpus import CorpusNotFoundError, InMemoryCorpusStore
 from src.services.ingestion import (
     DocumentIngestionService,
@@ -18,6 +20,8 @@ from src.services.retrieval import RetrievalService
 
 __all__ = [
     "Citation",
+    "Claim",
+    "ClaimMapper",
     "CorpusNotFoundError",
     "CorpusRecord",
     "DocumentIngestionService",

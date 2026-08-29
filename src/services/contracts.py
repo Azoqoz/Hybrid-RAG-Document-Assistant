@@ -47,6 +47,8 @@ class RetrievalResult:
     keyword_score: float | None = None
     hybrid_score: float | None = None
     rerank_score: float | None = None
+    page_number: int | None = None
+    slide_number: int | None = None
 
     @classmethod
     def from_search_result(cls, result: dict) -> "RetrievalResult":
@@ -58,6 +60,8 @@ class RetrievalResult:
             keyword_score=result.get("keyword_score"),
             hybrid_score=result.get("hybrid_score"),
             rerank_score=result.get("rerank_score"),
+            page_number=result.get("page_number"),
+            slide_number=result.get("slide_number"),
         )
 
     def to_generator_result(self) -> dict:
@@ -79,13 +83,30 @@ class RetrievalResult:
 
 @dataclass(frozen=True)
 class Citation:
+    citation_id: str
     filename: str
     chunk_id: int
-    text_snippet: str
+    snippet: str
     semantic_score: float | None = None
     keyword_score: float | None = None
     hybrid_score: float | None = None
     rerank_score: float | None = None
+    rerank_position: int | None = None
+    page_number: int | None = None
+    slide_number: int | None = None
+
+    @property
+    def text_snippet(self) -> str:
+        """Backward-compatible alias for clients using the Phase 3 field name."""
+        return self.snippet
+
+
+@dataclass(frozen=True)
+class Claim:
+    claim_id: str
+    text: str
+    citation_ids: list[str]
+    support_status: str | None = None
 
 
 @dataclass(frozen=True)
@@ -95,5 +116,6 @@ class QueryResponse:
     provider: str
     is_summary: bool
     answer: str
+    claims: list[Claim]
     retrieval_results: list[RetrievalResult]
     citations: list[Citation]
