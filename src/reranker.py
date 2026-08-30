@@ -2,8 +2,12 @@ from sentence_transformers import CrossEncoder
 
 
 class CrossEncoderReranker:
-    def __init__(self):
-        self.model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+    def __init__(self, model=None):
+        self.model = (
+            model
+            if model is not None
+            else CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        )
 
     def rerank(self, query: str, results: list[dict], top_k: int = 5) -> list[dict]:
         if not query.strip() or not results:

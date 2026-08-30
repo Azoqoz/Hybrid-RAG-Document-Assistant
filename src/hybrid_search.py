@@ -4,10 +4,13 @@ from src.semantic_search import SemanticSearcher
 
 
 class HybridSearcher:
-    def __init__(self, chunks: list[DocumentChunk]):
+    def __init__(self, chunks: list[DocumentChunk], semantic_model=None):
         self.chunks = chunks
         self.chunks_by_id = {chunk.chunk_id: chunk for chunk in chunks}
-        self.semantic_searcher = SemanticSearcher(chunks)
+        if semantic_model is None:
+            self.semantic_searcher = SemanticSearcher(chunks)
+        else:
+            self.semantic_searcher = SemanticSearcher(chunks, model=semantic_model)
         self.keyword_searcher = KeywordSearcher(chunks)
 
     def search(

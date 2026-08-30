@@ -16,8 +16,13 @@ class AnswerGenerator:
     )
     SUPPORTED_PROVIDERS = {"none", "openai", "anthropic", "gemini"}
 
-    def __init__(self, provider: str | None = None):
+    def __init__(
+        self,
+        provider: str | None = None,
+        include_sources: bool = True,
+    ):
         load_dotenv()
+        self.include_sources = include_sources
         self.provider = self._normalize_provider(
             provider or os.getenv("LLM_PROVIDER", "none")
         )
@@ -321,8 +326,9 @@ class AnswerGenerator:
                 "- The uploaded document contains relevant information, but it is not detailed enough to summarize confidently."
             )
 
-        lines.extend(["", "Sources used:"])
-        lines.extend(self._source_lines(summary_results[:3]))
+        if self.include_sources:
+            lines.extend(["", "Sources used:"])
+            lines.extend(self._source_lines(summary_results[:3]))
 
         return "\n".join(lines)
 
@@ -402,8 +408,14 @@ class AnswerGenerator:
                 "- The lecture introduces the main concepts shown in the slide titles and supporting bullet points."
             )
 
-        lines.extend(["", "Sources used:"])
-        lines.extend(self._deduped_source_lines(summary_results, default_topic="Lecture slides"))
+        if self.include_sources:
+            lines.extend(["", "Sources used:"])
+            lines.extend(
+                self._deduped_source_lines(
+                    summary_results,
+                    default_topic="Lecture slides",
+                )
+            )
 
         return "\n".join(lines)
 
@@ -623,8 +635,9 @@ class AnswerGenerator:
         else:
             lines.append("- The uploaded document contains relevant information, but it is not detailed enough to summarize confidently.")
 
-        lines.extend(["", "Sources used:"])
-        lines.extend(self._source_lines(top_results[:3]))
+        if self.include_sources:
+            lines.extend(["", "Sources used:"])
+            lines.extend(self._source_lines(top_results[:3]))
 
         return "\n".join(lines)
 
@@ -921,6 +934,9 @@ class AnswerGenerator:
         return " ".join(words[:max_words]).rstrip(".,;:") + "."
 
     def _append_sources(self, answer: str, results: list[dict]) -> str:
+        if not self.include_sources:
+            return answer.strip()
+
         source_lines = ["Sources used:"]
         source_lines.extend(self._source_lines(results))
 

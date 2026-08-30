@@ -6,9 +6,13 @@ from src.chunking import DocumentChunk
 
 
 class SemanticSearcher:
-    def __init__(self, chunks: list[DocumentChunk]):
+    def __init__(self, chunks: list[DocumentChunk], model=None):
         self.chunks = chunks
-        self.model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        self.model = (
+            model
+            if model is not None
+            else SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        )
 
         chunk_texts = [chunk.text for chunk in chunks]
         if chunk_texts:
