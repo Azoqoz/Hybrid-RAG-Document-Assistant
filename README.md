@@ -1,71 +1,132 @@
 # Hybrid RAG Document Assistant
 
-A multi-provider Retrieval-Augmented Generation application for asking source-grounded questions across PDF, DOCX, TXT, and PPTX documents.
+A full-stack Retrieval-Augmented Generation application for asking source-grounded questions across PDF, DOCX, TXT, and PPTX documents using hybrid retrieval, reranking, structured citations, and inspectable evidence.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
-![Streamlit](https://img.shields.io/badge/Framework-Streamlit-red)
-![RAG](https://img.shields.io/badge/AI-Retrieval--Augmented%20Generation-purple)
+![Next.js](https://img.shields.io/badge/Frontend-Next.js-black)
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)
+![RAG](https://img.shields.io/badge/AI-Hybrid%20RAG-purple)
 ![FAISS](https://img.shields.io/badge/Vector%20Search-FAISS-green)
-![Status](https://img.shields.io/badge/Status-Completed-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-52%20Passed-brightgreen)
+![Status](https://img.shields.io/badge/Status-Production-brightgreen)
+
+---
+
+## Live Application
+
+**Frontend**
+
+https://hybrid-rag-document-assistant-smoky.vercel.app
+
+**Backend API**
+
+https://hybrid-rag-document-assistant-api.onrender.com
+
+**Health Check**
+
+https://hybrid-rag-document-assistant-api.onrender.com/health
+
+> The production backend runs on the Render free tier and may require a short cold start after periods of inactivity.
 
 ---
 
 ## Overview
 
-Hybrid RAG Document Assistant allows users to upload documents and ask natural-language questions about their content.
+Hybrid RAG Document Assistant is a document-question-answering system built to make retrieval and evidence inspection visible rather than hiding the entire RAG pipeline behind a chatbot interface.
 
-The system combines semantic vector search, BM25 keyword retrieval, hybrid ranking, and Cross-Encoder reranking to identify the most relevant document sections before generating an answer.
+Users can upload PDF, DOCX, TXT, and PPTX files, build an in-memory searchable corpus, ask natural-language questions, and inspect the exact document chunks supporting the generated answer.
 
-It supports reports, resumes, notes, academic material, presentations, and other document-based knowledge sources.
+The retrieval pipeline combines:
 
-The application can run entirely without an API key using its retrieval-based fallback mode. Users can also connect OpenAI, Anthropic Claude, or Google Gemini for LLM-generated answers.
+- Semantic vector search
+- BM25 keyword retrieval
+- Weighted hybrid fusion
+- Cross-Encoder reranking
+- Structured claim-level citations
+- Evidence inspection
+
+The current production application uses a **Next.js frontend** connected to a **FastAPI backend**.
+
+For local development, the system uses Sentence Transformers and a PyTorch Cross-Encoder. Production deployment can switch to a lightweight **FastEmbed / ONNX Runtime** backend to operate within constrained cloud memory while preserving the same RAG architecture.
 
 ---
 
 ## Key Features
 
 - Upload multiple PDF, DOCX, TXT, and PPTX files
-- Extract text from documents and presentation slides
-- Split extracted content into manageable text chunks
-- Generate semantic embeddings using Sentence Transformers
+- Extract text using format-specific document loaders
+- Build a searchable in-memory document corpus
+- Split content using overlapping text chunks
+- Generate semantic embeddings
 - Perform vector similarity search with FAISS
-- Perform keyword retrieval with BM25
-- Combine semantic and keyword results through hybrid retrieval
-- Improve result relevance with Cross-Encoder reranking
-- Generate source-grounded answers
-- Summarize lectures and presentation files
-- Support OpenAI, Claude, and Gemini
-- Run without paid APIs using retrieval-only mode
-- Fall back automatically when an API key is unavailable
-- Reject questions that cannot be answered from the uploaded documents
-- Hide technical debugging settings from the default interface
-- Validate the main pipeline through automated smoke tests
+- Perform lexical retrieval with BM25
+- Combine semantic and keyword results using `0.65 / 0.35` hybrid weighting
+- Rerank the strongest candidates using a Cross-Encoder
+- Generate grounded answers from retrieved context
+- Return structured answer claims
+- Map claims conservatively to supporting citations
+- Inspect the exact evidence passage supporting a claim
+- Display semantic, BM25, hybrid, and reranking metadata
+- Expand surrounding retrieval context
+- Support retrieval-only answering without paid APIs
+- Support optional OpenAI, Anthropic Claude, and Google Gemini providers
+- Recover gracefully when a provider API key is unavailable
+- Use a lightweight FastEmbed / ONNX deployment profile
+- Keep heavy ML models out of FastAPI startup
+- Support responsive desktop, tablet, and mobile layouts
+- Provide keyboard-accessible evidence navigation
+- Validate the system through automated parity, service, API, contract, low-memory, and deployment-backend tests
 
 ---
 
-## Demo Workflow
+## Product Workflow
+
+```text
+Upload Documents
+      ↓
+Extract & Chunk
+      ↓
+Build Searchable Corpus
+      ↓
+Ask a Question
+      ↓
+Semantic Search + BM25
+      ↓
+Hybrid Fusion
+      ↓
+Cross-Encoder Reranking
+      ↓
+Grounded Answer
+      ↓
+Claim-Level Citations
+      ↓
+Inspect Evidence
+```
+
+### Typical workflow
 
 1. Upload one or more supported documents.
-2. Wait for the application to extract and index the content.
-3. Select an answer provider or use retrieval-only mode.
-4. Ask a question about the uploaded documents.
-5. Review the generated answer and its supporting sources.
+2. Wait for extraction, chunking, and indexing to complete.
+3. Open **Ask documents**.
+4. Enter a question about the indexed corpus.
+5. Review the grounded answer.
+6. Select a citation such as `A·18`.
+7. Inspect the supporting passage in the Evidence Stage.
+8. Expand retrieval details when deeper inspection is required.
 
 Example questions:
 
 ```text
-Summarize this lecture.
+What Python packages are required by this project?
 
-What are the main topics discussed in this file?
+What are the main topics discussed in this document?
 
-What are embeddings?
+Why does the report recommend this approach?
 
-Why are citations important in RAG?
+How are semantic and keyword retrieval combined?
 
-What technical skills are mentioned in the resume?
+Summarize the indexed corpus.
 ```
-
-Questions that require external or live information, such as weather updates, are rejected when the required information is not available in the uploaded documents.
 
 ---
 
@@ -73,43 +134,47 @@ Questions that require external or live information, such as weather updates, ar
 
 ```mermaid
 flowchart LR
-    subgraph INGEST["Document Processing"]
-        direction TB
-        A1[Upload PDF, DOCX, TXT, or PPTX]
-        A2[Extract Document Text]
-        A3[Split Content into Chunks]
+    UI["Next.js Frontend"]
 
+    API["FastAPI API"]
+
+    subgraph INGEST["Document Ingestion"]
+        A1["PDF / DOCX / TXT / PPTX"]
+        A2["Text Extraction"]
+        A3["120-word Chunks<br/>30-word Overlap"]
         A1 --> A2 --> A3
     end
 
-    subgraph RETRIEVE["Hybrid Retrieval"]
-        direction TB
-        B1[Semantic Search with FAISS]
-        B2[BM25 Keyword Search]
-        B3[Merge Retrieval Results]
-        B4[Cross-Encoder Reranking]
+    subgraph SEARCH["Hybrid Retrieval"]
+        B1["Semantic Embeddings"]
+        B2["FAISS Vector Search"]
+        B3["BM25 Keyword Search"]
+        B4["0.65 Semantic<br/>0.35 BM25"]
+        B5["Cross-Encoder Reranking"]
 
-        B1 --> B3
-        B2 --> B3
+        B1 --> B2
+        B2 --> B4
         B3 --> B4
+        B4 --> B5
     end
 
-    subgraph ANSWER["Answer Generation"]
-        direction TB
-        C1[Select Answer Provider]
-        C2[OpenAI, Claude, or Gemini]
-        C3[Retrieval-Only Fallback]
-        C4[Source-Grounded Answer]
+    subgraph ANSWER["Grounded Response"]
+        C1["Answer Generation"]
+        C2["Structured Claims"]
+        C3["Structured Citations"]
+        C4["Evidence Inspection"]
 
         C1 --> C2
-        C1 --> C3
-        C2 --> C4
+        C2 --> C3
         C3 --> C4
     end
 
+    UI --> API
+    API --> INGEST
     A3 --> B1
-    A3 --> B2
-    B4 --> C1
+    A3 --> B3
+    B5 --> C1
+    C4 --> UI
 ```
 
 ---
@@ -118,40 +183,202 @@ flowchart LR
 
 ### 1. Document ingestion
 
-The application accepts the following file formats:
+The application accepts:
 
 - PDF
 - DOCX
 - TXT
 - PPTX
 
-Each file is processed using a format-specific document loader.
+Each format uses a dedicated extraction path.
+
+PDF files are processed with PyPDF, DOCX files through `python-docx`, and PPTX files through `python-pptx`.
+
+---
 
 ### 2. Text chunking
 
-Extracted text is divided into smaller chunks so that relevant sections can be retrieved without sending the entire document to the answer generator.
+Extracted text is divided into overlapping word windows.
+
+Current configuration:
+
+```text
+Chunk size: 120 words
+Overlap: 30 words
+```
+
+Each chunk receives a stable corpus chunk ID used throughout retrieval and citation generation.
+
+---
 
 ### 3. Semantic retrieval
 
-Sentence Transformer embeddings represent document chunks as vectors. FAISS is then used to retrieve chunks with the highest semantic similarity to the user’s question.
+The local inference backend uses:
+
+```text
+sentence-transformers/all-MiniLM-L6-v2
+```
+
+The resulting embeddings are normalized and stored in a FAISS `IndexFlatIP` index.
+
+With normalized vectors, inner-product search provides cosine-style semantic similarity.
+
+---
 
 ### 4. Keyword retrieval
 
-BM25 identifies chunks containing important terms that may not be ranked highly by semantic similarity alone.
+BM25 retrieval uses `BM25Okapi` to identify passages containing exact terminology that semantic similarity may underweight.
 
-### 5. Hybrid ranking
+This is especially useful for:
 
-Semantic and keyword retrieval results are combined into a unified candidate set.
+- Technical terminology
+- Proper nouns
+- Version numbers
+- Acronyms
+- Exact document language
 
-### 6. Reranking
+---
 
-A Cross-Encoder model scores the candidate chunks against the original question and prioritizes the most relevant results.
+### 5. Hybrid fusion
 
-### 7. Answer generation
+Semantic and BM25 results are normalized independently and combined using:
 
-The final context is sent either to the selected LLM provider or to the retrieval-based fallback generator.
+```text
+Semantic weight: 0.65
+BM25 weight:     0.35
+```
 
-The resulting answer is grounded in the retrieved document content.
+The strongest ten hybrid candidates continue to reranking.
+
+---
+
+### 6. Cross-Encoder reranking
+
+The local backend uses:
+
+```text
+cross-encoder/ms-marco-MiniLM-L-6-v2
+```
+
+The Cross-Encoder evaluates each question-passage pair directly and reorders the hybrid candidate set.
+
+The top five reranked passages continue into answer generation.
+
+---
+
+### 7. Grounded answer generation
+
+The default provider is:
+
+```text
+none
+```
+
+This mode requires no API key and produces a deterministic retrieval-based answer.
+
+Optional backend providers include:
+
+- OpenAI
+- Anthropic Claude
+- Google Gemini
+
+Missing provider credentials automatically fall back to retrieval-only behavior.
+
+---
+
+### 8. Claims and citations
+
+Answers are converted into structured claims.
+
+Example:
+
+```json
+{
+  "claim_id": "claim-001",
+  "text": "BM25 preserves exact technical terminology.",
+  "citation_ids": [
+    "citation-000018"
+  ],
+  "support_status": "evidence_match"
+}
+```
+
+Citation relationships are created conservatively.
+
+If the available evidence does not sufficiently match a claim, the system leaves the citation list empty instead of fabricating a source connection.
+
+---
+
+### 9. Evidence inspection
+
+The frontend converts backend citation IDs into compact display labels such as:
+
+```text
+A·18
+B·07
+C·04
+```
+
+Selecting a citation opens the Evidence Stage, which can expose:
+
+- Source filename
+- Chunk ID
+- Evidence snippet
+- Surrounding retrieved context
+- Semantic score
+- BM25 score
+- Hybrid score
+- Reranker score
+- Rerank position
+
+Retrieval scores are labeled independently because the different scoring methods do not share a guaranteed comparable scale.
+
+---
+
+## Local and Production Inference
+
+The project provides two inference backends.
+
+### Local / Full Development
+
+Default:
+
+```env
+RAG_INFERENCE_BACKEND=sentence_transformers
+```
+
+Uses:
+
+| Task | Model |
+|---|---|
+| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
+| Reranking | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| Runtime | Sentence Transformers / PyTorch |
+
+This is the default development configuration.
+
+---
+
+### Production / Low-Memory Deployment
+
+Render deployment uses:
+
+```env
+RAG_INFERENCE_BACKEND=fastembed
+LOW_MEMORY_MODE=true
+```
+
+Models:
+
+| Task | Model |
+|---|---|
+| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` |
+| Reranking | `Xenova/ms-marco-MiniLM-L-6-v2` |
+| Runtime | FastEmbed / ONNX Runtime |
+
+The ONNX deployment backend avoids loading PyTorch on the constrained Render instance while preserving the same retrieval architecture.
+
+Minor floating-point score differences between the PyTorch and ONNX runtimes are expected.
 
 ---
 
@@ -159,21 +386,28 @@ The resulting answer is grounded in the retrieved document content.
 
 | Category | Technology |
 |---|---|
-| Programming language | Python |
-| User interface | Streamlit |
+| Frontend | Next.js 16 |
+| Frontend language | TypeScript |
+| Backend | FastAPI |
+| Backend language | Python |
 | Vector search | FAISS |
-| Embeddings | Sentence Transformers |
 | Keyword retrieval | BM25 / rank-bm25 |
-| Reranking | Cross-Encoder |
+| Local embeddings | Sentence Transformers |
+| Production embeddings | FastEmbed / ONNX Runtime |
+| Local reranking | Cross-Encoder |
+| Production reranking | FastEmbed TextCrossEncoder |
 | PDF processing | PyPDF |
-| Word document processing | python-docx |
+| Word processing | python-docx |
 | PowerPoint processing | python-pptx |
 | Numerical operations | NumPy |
-| LLM provider | OpenAI API |
-| LLM provider | Anthropic Claude API |
-| LLM provider | Google Gemini API |
+| OpenAI integration | OpenAI API |
+| Claude integration | Anthropic API |
+| Gemini integration | Google GenAI |
 | Configuration | python-dotenv |
-| Testing | Automated smoke-test script |
+| Backend deployment | Render |
+| Frontend deployment | Vercel |
+| Testing | pytest |
+| Legacy interface | Streamlit |
 
 ---
 
@@ -182,11 +416,58 @@ The resulting answer is grounded in the retrieved document content.
 ```text
 Hybrid-RAG-Document-Assistant/
 ├── app.py
+├── DESIGN.md
 ├── requirements.txt
+├── requirements-render.txt
 ├── .env.example
 ├── .gitignore
 │
+├── frontend/
+│   ├── .env.example
+│   ├── package.json
+│   ├── next.config.ts
+│   ├── tsconfig.json
+│   │
+│   └── src/
+│       ├── app/
+│       │   ├── layout.tsx
+│       │   ├── page.tsx
+│       │   └── globals.css
+│       │
+│       ├── lib/
+│       │   └── rag-api.ts
+│       │
+│       └── components/
+│           └── rag-workspace/
+│               ├── RagWorkspace.tsx
+│               ├── DocumentsMode.tsx
+│               ├── DocumentSlab.tsx
+│               ├── QuestionComposer.tsx
+│               ├── GroundedAnswer.tsx
+│               ├── ClaimRow.tsx
+│               ├── EvidenceFlag.tsx
+│               ├── EvidenceStage.tsx
+│               ├── RetrievalDisclosure.tsx
+│               ├── adapters.ts
+│               ├── suggestions.ts
+│               └── types.ts
+│
 ├── src/
+│   ├── api/
+│   │   ├── app.py
+│   │   └── schemas.py
+│   │
+│   ├── services/
+│   │   ├── claims.py
+│   │   ├── contracts.py
+│   │   ├── corpus.py
+│   │   ├── ingestion.py
+│   │   ├── inference_backends.py
+│   │   ├── model_registry.py
+│   │   ├── provider.py
+│   │   ├── query.py
+│   │   └── retrieval.py
+│   │
 │   ├── chunking.py
 │   ├── document_loader.py
 │   ├── generator.py
@@ -195,17 +476,16 @@ Hybrid-RAG-Document-Assistant/
 │   ├── reranker.py
 │   └── semantic_search.py
 │
-├── scripts/
-│   └── run_smoke_tests.py
-│
-└── test_documents/
-    ├── cv_sample.txt
-    ├── lecture_slides_sample.txt
-    ├── long_sample.txt
-    ├── rag_notes.txt
-    ├── report_sample.txt
-    └── sample.txt
+└── tests/
+    ├── test_api.py
+    ├── test_phase1_parity.py
+    ├── test_phase2_services.py
+    ├── test_phase35_contract.py
+    ├── test_low_memory_mode.py
+    └── test_fastembed_backend.py
 ```
+
+`app.py` is retained as the original Streamlit implementation and development history. The production application uses the Next.js + FastAPI architecture.
 
 ---
 
@@ -218,7 +498,7 @@ git clone https://github.com/Azoqoz/Hybrid-RAG-Document-Assistant.git
 cd Hybrid-RAG-Document-Assistant
 ```
 
-### 2. Create a virtual environment
+### 2. Create a Python virtual environment
 
 #### Windows
 
@@ -234,44 +514,57 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Install the dependencies
+### 3. Install backend dependencies
 
 ```bash
 pip install -r requirements.txt
+```
+
+### 4. Install frontend dependencies
+
+```bash
+cd frontend
+npm install
+cd ..
 ```
 
 ---
 
 ## Configuration
 
-The application works without an API key when retrieval-only mode is selected.
+### Backend
 
-To use an external LLM provider, copy the example environment file:
+Copy the example environment file:
 
-### Windows
+#### Windows
 
 ```powershell
 copy .env.example .env
 ```
 
-### macOS / Linux
+#### macOS / Linux
 
 ```bash
 cp .env.example .env
 ```
 
-Add only the providers that you intend to use:
+Default local configuration can run without an external LLM API key.
+
+Example:
 
 ```env
 LLM_PROVIDER=none
 
-OPENAI_API_KEY=your_openai_api_key
+RAG_INFERENCE_BACKEND=sentence_transformers
+LOW_MEMORY_MODE=false
+
+OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4.1-mini
 
-ANTHROPIC_API_KEY=your_anthropic_api_key
+ANTHROPIC_API_KEY=
 ANTHROPIC_MODEL=claude-sonnet-4-5
 
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
@@ -284,186 +577,355 @@ anthropic
 gemini
 ```
 
-Model names can be changed through the `.env` file.
+---
 
-> Never commit a `.env` file or real API keys to GitHub.
+### Frontend
+
+Create:
+
+```text
+frontend/.env.local
+```
+
+Add:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+> Never commit `.env`, `.env.local`, or real API keys to GitHub.
 
 ---
 
 ## Running the Application
 
-Start the Streamlit application:
+The production-style local workflow runs the FastAPI backend and Next.js frontend separately.
+
+### 1. Start FastAPI
+
+From the project root:
 
 ```bash
-streamlit run app.py
+python -m uvicorn src.api.app:app --reload --port 8000
 ```
 
-Streamlit will display a local URL in the terminal, typically:
+Backend:
 
 ```text
-http://localhost:8501
+http://127.0.0.1:8000
 ```
 
-Open the displayed URL in your browser.
+Health check:
+
+```text
+http://127.0.0.1:8000/health
+```
+
+---
+
+### 2. Start Next.js
+
+Open a second terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Frontend:
+
+```text
+http://localhost:3000
+```
+
+---
+
+## API
+
+Main endpoints:
+
+```text
+GET    /health
+POST   /corpora
+GET    /corpora/{corpus_id}
+DELETE /corpora/{corpus_id}
+
+POST   /corpora/{corpus_id}/documents
+POST   /corpora/{corpus_id}/query
+```
+
+### Corpus lifecycle
+
+A frontend session creates an in-memory corpus.
+
+Documents are then uploaded to that corpus and indexed.
+
+Because corpus state is currently memory-only, restarting the backend invalidates existing corpus IDs. The frontend detects missing corpora and creates a new workspace automatically.
 
 ---
 
 ## Answer Providers
 
-### Retrieval-only mode
+### Retrieval-only
 
-Retrieval-only mode is the default option and does not require any paid service or external API key.
+Default behavior:
 
-The application retrieves relevant document sections and converts them into a structured fallback answer.
+```text
+provider = none
+```
+
+No external API key is required.
+
+The application converts retrieved evidence into a deterministic grounded answer.
+
+---
 
 ### OpenAI
 
-When an OpenAI API key is configured, the retrieved context can be passed to the selected OpenAI model.
+The backend can generate answers through the OpenAI Responses API when configured.
+
+Default model:
+
+```text
+gpt-4.1-mini
+```
+
+---
 
 ### Anthropic Claude
 
-When an Anthropic API key is configured, users can select Claude as the answer-generation provider.
+Anthropic Messages API support is available when an API key is configured.
+
+Default model:
+
+```text
+claude-sonnet-4-5
+```
+
+---
 
 ### Google Gemini
 
-When a Gemini API key is configured, users can generate answers using a supported Gemini model.
+Gemini answer generation is also supported.
+
+Default model:
+
+```text
+gemini-2.5-flash
+```
+
+---
 
 ### Automatic fallback
 
-When a provider is selected but its API key is missing or unavailable, the application returns to retrieval-only mode instead of stopping the workflow.
+If a configured provider is unavailable or its API key is missing, the system returns to retrieval-only answering instead of breaking the workflow.
+
+The current production frontend defaults to retrieval-only mode.
 
 ---
 
 ## Safety and Grounding
 
-The application is designed to answer questions using only the uploaded document content.
+The application is designed around evidence-first answering.
 
-Its safety behavior includes:
+Grounding behavior includes:
 
-- Detecting questions that are unrelated to the uploaded documents
-- Avoiding unsupported answers when relevant context is unavailable
-- Returning a clear message when the documents do not contain enough information
-- Grounding generated answers in retrieved document chunks
-- Preventing API-key failures from breaking the application
-- Keeping advanced debugging controls hidden by default
+- Restricting answers to uploaded corpus content
+- Retrieving evidence before answer generation
+- Preserving source filenames and chunk identities
+- Returning structured citations
+- Mapping claims only when sufficient evidence overlap exists
+- Leaving unsupported claims uncited rather than inventing references
+- Exposing the exact evidence passage used
+- Providing retrieval and reranking metadata for inspection
+- Recovering from unavailable external providers
+- Recovering from expired in-memory corpus IDs
+- Avoiding fabricated page or slide numbers when metadata is unavailable
 
-This reduces unsupported responses and keeps the assistant focused on the provided knowledge source.
+This keeps the application focused on the supplied knowledge source and makes its retrieval behavior inspectable.
 
 ---
 
 ## Running the Tests
 
-Run the automated smoke-test suite with:
+Run the complete test suite with:
 
 ```bash
-python scripts/run_smoke_tests.py
+python -m pytest --basetemp=.pytest_tmp -p no:cacheprovider
 ```
 
-The tests cover the main components of the application, including:
+Current result:
 
-- Module imports
-- Document loading
+```text
+52 passed
+0 failed
+```
+
+The test suite covers:
+
+- Original pipeline parity
+- Document ingestion
 - Text chunking
-- Semantic search
-- BM25 keyword search
-- Hybrid retrieval
+- Semantic retrieval
+- BM25 retrieval
+- Hybrid fusion
 - Cross-Encoder reranking
-- Retrieval-based answer generation
-- Lecture summarization
-- Out-of-document question handling
+- Framework-neutral RAG services
+- Corpus lifecycle
+- FastAPI endpoints
+- Structured claims
+- Structured citations
+- Query response contracts
+- Missing-provider fallback
+- Low-memory model lifecycle
+- Lightweight FastAPI startup
+- FastEmbed inference backend
+- ONNX deployment compatibility
+
+Frontend validation also passes:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
 
 ---
 
 ## Deployment
 
-The application can be deployed using Streamlit Community Cloud.
+The application is deployed as two independent services.
 
-Recommended deployment settings:
+### Frontend — Vercel
+
+Production URL:
 
 ```text
-Repository: Azoqoz/Hybrid-RAG-Document-Assistant
-Branch: main
-Main file path: app.py
+https://hybrid-rag-document-assistant-smoky.vercel.app
 ```
 
-For retrieval-only deployment, no API keys are required.
+Configuration:
 
-For optional LLM providers, add the required keys through the Streamlit secrets configuration:
-
-```toml
-OPENAI_API_KEY = "your_openai_api_key"
-ANTHROPIC_API_KEY = "your_anthropic_api_key"
-GEMINI_API_KEY = "your_gemini_api_key"
+```text
+Framework: Next.js
+Root Directory: frontend
 ```
 
-Do not store real API keys directly inside the source code or repository.
+Environment:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://hybrid-rag-document-assistant-api.onrender.com
+```
 
 ---
 
-## Screenshots
+### Backend — Render
 
-### Lecture Summary
+Production API:
 
-![Lecture Summary](docs/screenshots/lecture-summary.png)
+```text
+https://hybrid-rag-document-assistant-api.onrender.com
+```
 
-### Out-of-Document Safety
+Build command:
 
-![Out-of-document Safety](docs/screenshots/out-of-document-safety.png)
+```bash
+pip install -r requirements-render.txt
+```
 
-### Advanced Debug Tools
+Start command:
 
-![Advanced Debug Tools](docs/screenshots/advanced-debug-tools.png)
+```bash
+python -m uvicorn src.api.app:app --host 0.0.0.0 --port $PORT
+```
+
+Production environment:
+
+```env
+LOW_MEMORY_MODE=true
+RAG_INFERENCE_BACKEND=fastembed
+TOKENIZERS_PARALLELISM=false
+OMP_NUM_THREADS=1
+CORS_ALLOWED_ORIGINS=https://hybrid-rag-document-assistant-smoky.vercel.app
+```
+
+`requirements-render.txt` intentionally excludes:
+
+```text
+torch
+sentence-transformers
+streamlit
+```
+
+This keeps the production backend lightweight enough to operate using FastEmbed and ONNX Runtime.
+
+> Render free instances can spin down after inactivity, so the first request after a cold start may take additional time.
 
 ---
 
 ## Current Limitations
 
-- Document indexes are rebuilt when the application session restarts
-- Retrieved vectors are not stored in a persistent vector database
-- PDF citations do not always include precise page-level references
-- Large documents may require additional processing time
+- Corpus and FAISS indexes are stored in application memory
+- Backend restarts remove uploaded corpora
+- Multi-user persistent storage is not implemented
+- Authentication is not currently included
+- PDF citations do not yet guarantee precise page-level references
+- DOCX paragraph-level coordinates are not currently exposed
+- Scanned PDFs do not use OCR
+- Complex tables are not extracted structurally
+- Large document collections can require additional indexing time
+- Render free instances introduce cold-start latency
 - Retrieval-only answers are less flexible than LLM-generated answers
-- Local LLM inference is not currently included
-- Authentication and user-specific document storage are not implemented
+- Production and local inference runtimes may produce small floating-point score differences
 
 ---
 
 ## Future Improvements
 
-- Add persistent vector database storage
-- Add page-level and slide-level citations
-- Add local LLM support through Ollama
+- Add persistent corpus and vector-index storage
 - Add user authentication
-- Add document collections and saved workspaces
+- Add private document workspaces
+- Add page-level PDF citations
+- Add slide-level presentation coordinates
+- Add OCR for scanned PDFs
+- Improve table extraction
+- Add saved document collections
+- Add conversational follow-up memory
+- Add streaming answer generation
+- Add retrieval-quality evaluation metrics
+- Add automated RAG regression benchmarks
+- Add richer provider selection in the production frontend
 - Add Docker support
-- Add automated RAG evaluation metrics
-- Add an evaluation and retrieval-quality dashboard
-- Add conversational memory for follow-up questions
-- Add support for additional document formats
+- Add persistent deployment storage
 
 ---
 
 ## Why This Project Matters
 
-This project demonstrates an end-to-end Retrieval-Augmented Generation workflow rather than relying only on direct LLM prompting.
+Hybrid RAG Document Assistant demonstrates more than a basic document chatbot.
 
-It covers several practical AI Engineering components:
+The project covers a complete AI Engineering workflow:
 
 - Multi-format document ingestion
-- Text preprocessing and chunking
+- Chunking and preprocessing
 - Embedding generation
-- Vector similarity search
-- Keyword retrieval
+- FAISS vector retrieval
+- BM25 lexical retrieval
 - Hybrid search
-- Reranking
-- Multi-provider LLM integration
-- Source-grounded answer generation
-- Safe fallback handling
-- Automated pipeline testing
-- Streamlit application development
-- Cloud-ready configuration
+- Cross-Encoder reranking
+- Structured claim generation
+- Claim-level citation mapping
+- Evidence inspection
+- Multi-provider answer generation
+- Framework-neutral service architecture
+- REST API design with FastAPI
+- Full-stack integration with Next.js
+- Low-memory inference lifecycle management
+- PyTorch and ONNX inference backends
+- Production deployment on Vercel and Render
+- Automated parity and regression testing
 
-The project shows how retrieval quality, provider flexibility, safety behavior, and user experience can be combined into a complete document-question-answering application.
+The system makes retrieval evidence visible to the user and demonstrates how RAG quality, explainability, deployment constraints, and full-stack product design can be combined into one production application.
 
 ---
 
