@@ -15,11 +15,13 @@ class RetrievalService:
         self._reranker = None
 
     def build_indexes(self, corpus: CorpusRecord) -> None:
-        embedding_model = self.model_registry.get_embedding_model()
-        corpus.hybrid_searcher = HybridSearcher(
-            corpus.chunks,
-            semantic_model=embedding_model,
-        )
+        with self.model_registry.use_embedding_model() as embedding_model:
+            corpus.hybrid_searcher = HybridSearcher(
+                corpus.chunks,
+                semantic_model=embedding_model,
+                retain_semantic_model=not self.model_registry.low_memory_mode,
+            )
+            del embedding_model
         corpus.index_build_count += 1
 
     def semantic_search(
@@ -29,6 +31,16 @@ class RetrievalService:
         top_k: int = 5,
     ) -> list[RetrievalResult]:
         searcher = self._get_searcher(corpus)
+        if self.model_registry.low_memory_mode:
+            with self.model_registry.use_embedding_model() as embedding_model:
+                results = searcher.semantic_searcher.search(
+                    query,
+                    top_k=top_k,
+                    model=embedding_model,
+                )
+                del embedding_model
+        else:
+            results = searcher.semantic_searcher.search(query, top_k=top_k)
         return [
             RetrievalResult(
                 filename=result["source"],
@@ -36,7 +48,7 @@ class RetrievalService:
                 text=result["text"],
                 semantic_score=result["score"],
             )
-            for result in searcher.semantic_searcher.search(query, top_k=top_k)
+            for result in results
         ]
 
     def keyword_search(
@@ -63,12 +75,23 @@ class RetrievalService:
         top_k: int = 5,
     ) -> list[RetrievalResult]:
         searcher = self._get_searcher(corpus)
-        results = searcher.search(
-            query,
-            top_k=top_k,
-            semantic_weight=self.SEMANTIC_WEIGHT,
-            keyword_weight=self.KEYWORD_WEIGHT,
-        )
+        if self.model_registry.low_memory_mode:
+            with self.model_registry.use_embedding_model() as embedding_model:
+                results = searcher.search(
+                    query,
+                    top_k=top_k,
+                    semantic_weight=self.SEMANTIC_WEIGHT,
+                    keyword_weight=self.KEYWORD_WEIGHT,
+                    semantic_model=embedding_model,
+                )
+                del embedding_model
+        else:
+            results = searcher.search(
+                query,
+                top_k=top_k,
+                semantic_weight=self.SEMANTIC_WEIGHT,
+                keyword_weight=self.KEYWORD_WEIGHT,
+            )
         return [RetrievalResult.from_search_result(result) for result in results]
 
     def retrieve_and_rerank(
@@ -81,6 +104,21 @@ class RetrievalService:
             query,
             top_k=self.HYBRID_TOP_K,
         )
+        if not hybrid_results:
+            return []
+
+        if self.model_registry.low_memory_mode:
+            with self.model_registry.use_reranker_model() as reranker_model:
+                reranker = CrossEncoderReranker(model=reranker_model)
+                reranked = reranker.rerank(
+                    query,
+                    [result.to_generator_result() for result in hybrid_results],
+                    top_k=self.RERANK_TOP_K,
+                )
+                del reranker
+                del reranker_model
+            return [RetrievalResult.from_search_result(result) for result in reranked]
+
         reranker = self._get_reranker()
         reranked = reranker.rerank(
             query,
@@ -95,6 +133,8 @@ class RetrievalService:
         return corpus.hybrid_searcher
 
     def _get_reranker(self) -> CrossEncoderReranker:
+        if self.model_registry.low_memory_mode:
+            raise RuntimeError("Low-memory rerankers must use a scoped model lease.")
         if self._reranker is None:
             self._reranker = CrossEncoderReranker(
                 model=self.model_registry.get_reranker_model()

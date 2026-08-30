@@ -1,29 +1,33 @@
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from src.chunking import DocumentChunk
 
 
 class SemanticSearcher:
-    def __init__(self, chunks: list[DocumentChunk], model=None):
+    def __init__(
+        self,
+        chunks: list[DocumentChunk],
+        model=None,
+        retain_model: bool = True,
+    ):
         self.chunks = chunks
-        self.model = (
-            model
-            if model is not None
-            else SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-        )
+        if model is None:
+            from sentence_transformers import SentenceTransformer
+
+            model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        self.model = model if retain_model else None
 
         chunk_texts = [chunk.text for chunk in chunks]
         if chunk_texts:
-            self.embeddings = self.model.encode(
+            self.embeddings = model.encode(
                 chunk_texts,
                 convert_to_numpy=True,
                 show_progress_bar=False,
             ).astype("float32")
             faiss.normalize_L2(self.embeddings)
         else:
-            embedding_dimension = self.model.get_sentence_embedding_dimension()
+            embedding_dimension = model.get_sentence_embedding_dimension()
             self.embeddings = np.empty((0, embedding_dimension), dtype="float32")
 
         embedding_dimension = self.embeddings.shape[1]
@@ -31,11 +35,15 @@ class SemanticSearcher:
         if len(self.embeddings) > 0:
             self.index.add(self.embeddings)
 
-    def search(self, query: str, top_k: int = 5) -> list[dict]:
+    def search(self, query: str, top_k: int = 5, model=None) -> list[dict]:
         if not query.strip() or not self.chunks:
             return []
 
-        query_embedding = self.model.encode(
+        active_model = model or self.model
+        if active_model is None:
+            raise RuntimeError("An embedding model is required for semantic search.")
+
+        query_embedding = active_model.encode(
             [query],
             convert_to_numpy=True,
             show_progress_bar=False,

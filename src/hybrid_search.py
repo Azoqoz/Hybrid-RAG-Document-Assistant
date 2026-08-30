@@ -4,13 +4,22 @@ from src.semantic_search import SemanticSearcher
 
 
 class HybridSearcher:
-    def __init__(self, chunks: list[DocumentChunk], semantic_model=None):
+    def __init__(
+        self,
+        chunks: list[DocumentChunk],
+        semantic_model=None,
+        retain_semantic_model: bool = True,
+    ):
         self.chunks = chunks
         self.chunks_by_id = {chunk.chunk_id: chunk for chunk in chunks}
         if semantic_model is None:
             self.semantic_searcher = SemanticSearcher(chunks)
         else:
-            self.semantic_searcher = SemanticSearcher(chunks, model=semantic_model)
+            self.semantic_searcher = SemanticSearcher(
+                chunks,
+                model=semantic_model,
+                retain_model=retain_semantic_model,
+            )
         self.keyword_searcher = KeywordSearcher(chunks)
 
     def search(
@@ -19,11 +28,19 @@ class HybridSearcher:
         top_k: int = 5,
         semantic_weight: float = 0.65,
         keyword_weight: float = 0.35,
+        semantic_model=None,
     ) -> list[dict]:
         if not query.strip() or not self.chunks:
             return []
 
-        semantic_results = self.semantic_searcher.search(query, top_k=top_k)
+        if semantic_model is None:
+            semantic_results = self.semantic_searcher.search(query, top_k=top_k)
+        else:
+            semantic_results = self.semantic_searcher.search(
+                query,
+                top_k=top_k,
+                model=semantic_model,
+            )
         keyword_results = self.keyword_searcher.search(query, top_k=top_k)
 
         semantic_scores = self._normalize_scores(semantic_results)
