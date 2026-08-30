@@ -88,13 +88,25 @@
 }
 
 .liveDot,
+.errorDot,
 .indexedState > span,
-.indexingState > span {
+.indexingState > span,
+.failedState > span {
   width: 9px;
   height: 9px;
   display: inline-block;
   flex: 0 0 auto;
   background: var(--success);
+}
+
+.errorDot,
+.failedState > span {
+  background: var(--error);
+}
+
+.corpusUnavailable,
+.corpusContext .corpusUnavailable {
+  color: var(--error);
 }
 
 .workflowContext {
@@ -200,6 +212,13 @@
   transform: translateY(-1px);
 }
 
+.addDocumentsButton:disabled {
+  border-color: var(--border-strong);
+  background: var(--border-strong);
+  cursor: wait;
+  transform: none;
+}
+
 .addDocumentsButton {
   min-width: 180px;
   padding: 0 22px;
@@ -210,6 +229,17 @@
   margin-right: 7px;
   font-size: 21px;
   font-weight: 450;
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .documentTray {
@@ -285,6 +315,14 @@
   color: var(--warning);
 }
 
+.failedState {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--error);
+  font-weight: 780;
+}
+
 .indexingState > span {
   background: var(--evidence);
 }
@@ -322,6 +360,27 @@
   display: block;
   background: var(--success);
   transition: width var(--motion-base) ease;
+}
+
+.emptyDocuments {
+  min-height: 190px;
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 28px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+}
+
+.emptyDocuments strong {
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+
+.emptyDocuments span {
+  color: var(--ink-secondary);
 }
 
 .corpusReady {
@@ -489,6 +548,55 @@
   font-weight: 690;
   letter-spacing: -0.045em;
   line-height: 1.06;
+  white-space: pre-wrap;
+}
+
+.answerFallback {
+  max-width: 900px;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(19px, 1.55vw, 23px);
+  line-height: 1.62;
+  white-space: pre-wrap;
+}
+
+.answerEmptyState {
+  width: min(1120px, 100%);
+  padding: 34px 0 54px;
+  border-top: 1px solid var(--border);
+}
+
+.answerEmptyState p {
+  max-width: 720px;
+  margin: 8px 0 0;
+  color: var(--ink-secondary);
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.inlineError {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0 0 18px;
+  padding: 10px 0 10px 16px;
+  border-left: 4px solid var(--error);
+  color: var(--error);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.inlineError button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid var(--error);
+  background: transparent;
+  color: var(--error);
+  cursor: pointer;
+  font-weight: 780;
 }
 
 .claimList {
@@ -797,19 +905,20 @@
 
 .retrievalDetails dl {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px 24px;
   margin: 0;
-  background: rgba(24, 34, 31, 0.35);
+  background: transparent;
 }
 
 .retrievalDetails dl div {
-  min-height: 76px;
+  min-height: 66px;
   display: grid;
   align-content: center;
   gap: 4px;
-  padding: 10px 12px;
-  background: var(--evidence-soft);
+  padding: 10px 0;
+  border-top: 1px solid rgba(24, 34, 31, 0.38);
+  background: transparent;
 }
 
 .retrievalDetails dt {
@@ -928,6 +1037,12 @@
     flex-direction: column;
     gap: 4px;
     padding: 12px 14px;
+  }
+
+  .inlineError {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .composerSection {

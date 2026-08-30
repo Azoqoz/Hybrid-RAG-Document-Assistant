@@ -6,6 +6,8 @@ import styles from "./rag-workspace.module.css";
 
 type GroundedAnswerProps = {
   claims: Claim[];
+  answer: string;
+  citationLabelById: Record<string, string>;
   selectedClaimId: string;
   selectedEvidence?: Evidence;
   evidenceOptions: Evidence[];
@@ -15,13 +17,16 @@ type GroundedAnswerProps = {
     claimId: string,
     evidenceId: string,
     trigger: HTMLButtonElement,
+    focusEvidence: boolean,
   ) => void;
-  onSwitchEvidence: (evidenceId: string) => void;
-  onCloseEvidence: () => void;
+  onSwitchEvidence: (evidenceId: string, focusEvidence: boolean) => void;
+  onCloseEvidence: (restoreFocus: boolean) => void;
 };
 
 export function GroundedAnswer({
   claims,
+  answer,
+  citationLabelById,
   selectedClaimId,
   selectedEvidence,
   evidenceOptions,
@@ -34,34 +39,38 @@ export function GroundedAnswer({
   return (
     <section className={styles.answerSection} aria-labelledby="answer-heading">
       <header className={styles.answerHeader}>
-        <span className={styles.eyebrow}>Grounded answer</span>
-        <h2 id="answer-heading">Hybrid retrieval balances meaning with exact language.</h2>
+        <h2 id="answer-heading">Grounded answer</h2>
       </header>
 
-      <div className={styles.claimList}>
-        {claims.map((claim) => (
-          <Fragment key={claim.id}>
-            <ClaimRow
-              claim={claim}
-              selected={claim.id === selectedClaimId}
-              selectedEvidenceId={selectedEvidence?.id}
-              onSelectClaim={() => onSelectClaim(claim.id)}
-              onSelectEvidence={(evidenceId, trigger) =>
-                onSelectEvidence(claim.id, evidenceId, trigger)
-              }
-            />
-            {claim.id === selectedClaimId && selectedEvidence ? (
-              <EvidenceStage
-                evidence={selectedEvidence}
-                evidenceOptions={evidenceOptions}
-                headingRef={evidenceHeadingRef}
-                onSelectEvidence={onSwitchEvidence}
-                onClose={onCloseEvidence}
+      {claims.length ? (
+        <div className={styles.claimList}>
+          {claims.map((claim) => (
+            <Fragment key={claim.id}>
+              <ClaimRow
+                claim={claim}
+                selected={claim.id === selectedClaimId}
+                selectedEvidenceId={selectedEvidence?.id}
+                citationLabelById={citationLabelById}
+                onSelectClaim={() => onSelectClaim(claim.id)}
+                onSelectEvidence={(evidenceId, trigger, focusEvidence) =>
+                  onSelectEvidence(claim.id, evidenceId, trigger, focusEvidence)
+                }
               />
-            ) : null}
-          </Fragment>
-        ))}
-      </div>
+              {claim.id === selectedClaimId && selectedEvidence ? (
+                <EvidenceStage
+                  evidence={selectedEvidence}
+                  evidenceOptions={evidenceOptions}
+                  headingRef={evidenceHeadingRef}
+                  onSelectEvidence={onSwitchEvidence}
+                  onClose={onCloseEvidence}
+                />
+              ) : null}
+            </Fragment>
+          ))}
+        </div>
+      ) : (
+        <p className={styles.answerFallback}>{answer}</p>
+      )}
     </section>
   );
 }

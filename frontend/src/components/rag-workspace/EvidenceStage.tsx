@@ -7,8 +7,8 @@ type EvidenceStageProps = {
   evidence: Evidence;
   evidenceOptions: Evidence[];
   headingRef: RefObject<HTMLHeadingElement | null>;
-  onSelectEvidence: (evidenceId: string) => void;
-  onClose: () => void;
+  onSelectEvidence: (evidenceId: string, focusEvidence: boolean) => void;
+  onClose: (restoreFocus: boolean) => void;
 };
 
 export function EvidenceStage({
@@ -30,10 +30,14 @@ export function EvidenceStage({
         <div>
           <span className={styles.evidenceKicker}>Inspect evidence</span>
           <h3 id="evidence-heading" ref={headingRef} tabIndex={-1}>
-            Evidence {evidence.id}
+            Evidence {evidence.displayId}
           </h3>
         </div>
-        <button className={styles.closeEvidence} type="button" onClick={onClose}>
+        <button
+          className={styles.closeEvidence}
+          type="button"
+          onClick={(event) => onClose(event.detail === 0)}
+        >
           Close evidence <span aria-hidden="true">×</span>
         </button>
       </header>
@@ -55,13 +59,13 @@ export function EvidenceStage({
                   type="button"
                   key={option.id}
                   aria-pressed={option.id === evidence.id}
-                  aria-label={`Show evidence ${option.id}`}
-                  onClick={() => {
+                  aria-label={`Show evidence ${option.displayId}`}
+                  onClick={(event) => {
                     setShowContext(false);
-                    onSelectEvidence(option.id);
+                    onSelectEvidence(option.id, event.detail === 0);
                   }}
                 >
-                  {option.id}
+                  {option.displayId}
                 </button>
               ))}
             </div>
@@ -69,28 +73,26 @@ export function EvidenceStage({
         </aside>
 
         <div className={styles.passageColumn}>
-          <blockquote className={styles.evidencePassage}>
-            {evidence.passageLead}
-            <mark>{evidence.passageHighlight}</mark>
-            {evidence.passageTail}
-          </blockquote>
+          <blockquote className={styles.evidencePassage}>{evidence.snippet}</blockquote>
 
-          {showContext ? (
+          {showContext && evidence.surroundingContext ? (
             <div className={styles.surroundingContext}>
               <span>Surrounding context</span>
               <p>{evidence.surroundingContext}</p>
             </div>
           ) : null}
 
-          <button
-            className={styles.contextAction}
-            type="button"
-            aria-expanded={showContext}
-            onClick={() => setShowContext((current) => !current)}
-          >
-            {showContext ? "Hide surrounding context" : "Show surrounding context"}
-            <span aria-hidden="true">{showContext ? "−" : "+"}</span>
-          </button>
+          {evidence.surroundingContext ? (
+            <button
+              className={styles.contextAction}
+              type="button"
+              aria-expanded={showContext}
+              onClick={() => setShowContext((current) => !current)}
+            >
+              {showContext ? "Hide surrounding context" : "Show surrounding context"}
+              <span aria-hidden="true">{showContext ? "−" : "+"}</span>
+            </button>
+          ) : null}
 
           <RetrievalDisclosure key={evidence.id} retrieval={evidence.retrieval} />
         </div>

@@ -5,6 +5,7 @@ type QuestionComposerProps = {
   question: string;
   examples: string[];
   isGrounding: boolean;
+  disabled: boolean;
   onQuestionChange: (question: string) => void;
   onSubmit: () => void;
 };
@@ -13,6 +14,7 @@ export function QuestionComposer({
   question,
   examples,
   isGrounding,
+  disabled,
   onQuestionChange,
   onSubmit,
 }: QuestionComposerProps) {
@@ -39,7 +41,7 @@ export function QuestionComposer({
             value={question}
             onChange={(event) => onQuestionChange(event.target.value)}
           />
-          <button type="submit" disabled={isGrounding || !question.trim()}>
+          <button type="submit" disabled={disabled || isGrounding || !question.trim()}>
             {isGrounding ? "Grounding answer…" : "Ground answer"}
             {!isGrounding ? <span aria-hidden="true">↗</span> : null}
           </button>

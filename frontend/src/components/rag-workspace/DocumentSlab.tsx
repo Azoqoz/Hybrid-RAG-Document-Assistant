@@ -8,6 +8,15 @@ type DocumentSlabProps = {
 
 export function DocumentSlab({ document, sourceLabel }: DocumentSlabProps) {
   const isIndexed = document.status === "indexed";
+  const isFailed = document.status === "failed";
+  const statusLabel =
+    document.status === "indexed"
+      ? "Indexed"
+      : document.status === "indexing"
+        ? "Indexing"
+        : document.status === "preparing"
+          ? "Preparing"
+          : "Failed";
 
   return (
     <article className={styles.documentSlab}>
@@ -17,9 +26,17 @@ export function DocumentSlab({ document, sourceLabel }: DocumentSlabProps) {
       <div className={styles.documentBody}>
         <div className={styles.documentTopline}>
           <span>Source {sourceLabel}</span>
-          <span className={isIndexed ? styles.indexedState : styles.indexingState}>
+          <span
+            className={
+              isIndexed
+                ? styles.indexedState
+                : isFailed
+                  ? styles.failedState
+                  : styles.indexingState
+            }
+          >
             <span aria-hidden="true" />
-            {isIndexed ? "Indexed" : `Indexing ${document.progress}%`}
+            {statusLabel}
           </span>
         </div>
         <h3>{document.filename}</h3>
@@ -27,18 +44,6 @@ export function DocumentSlab({ document, sourceLabel }: DocumentSlabProps) {
           {document.extent ? <span>{document.extent}</span> : null}
           <span>{document.chunkCount} chunks</span>
         </div>
-        {!isIndexed ? (
-          <div
-            className={styles.indexProgress}
-            role="progressbar"
-            aria-label={`Indexing ${document.filename}`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={document.progress}
-          >
-            <span style={{ width: `${document.progress}%` }} />
-          </div>
-        ) : null}
       </div>
     </article>
   );

@@ -7,14 +7,20 @@ type ClaimRowProps = {
   claim: Claim;
   selected: boolean;
   selectedEvidenceId?: string;
+  citationLabelById: Record<string, string>;
   onSelectClaim: () => void;
-  onSelectEvidence: (evidenceId: string, trigger: HTMLButtonElement) => void;
+  onSelectEvidence: (
+    evidenceId: string,
+    trigger: HTMLButtonElement,
+    focusEvidence: boolean,
+  ) => void;
 };
 
 export function ClaimRow({
   claim,
   selected,
   selectedEvidenceId,
+  citationLabelById,
   onSelectClaim,
   onSelectEvidence,
 }: ClaimRowProps) {
@@ -37,12 +43,14 @@ export function ClaimRow({
             {claim.citationIds.map((evidenceId, index) => (
               <EvidenceFlag
                 key={evidenceId}
-                evidenceId={evidenceId}
+                displayLabel={citationLabelById[evidenceId] ?? evidenceId}
                 selected={selected && selectedEvidenceId === evidenceId}
                 buttonRef={(node) => {
                   flagRefs.current[index] = node;
                 }}
-                onSelect={(trigger) => onSelectEvidence(evidenceId, trigger)}
+                onSelect={(trigger, focusEvidence) =>
+                  onSelectEvidence(evidenceId, trigger, focusEvidence)
+                }
                 onKeyDown={(event) => {
                   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
                   event.preventDefault();

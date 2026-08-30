@@ -2,6 +2,8 @@ import styles from "./rag-workspace.module.css";
 
 type CorpusReadyProps = {
   ready: boolean;
+  isIndexing: boolean;
+  unavailable: boolean;
   documentCount: number;
   chunkCount: number;
   onOpenAsk: () => void;
@@ -9,6 +11,8 @@ type CorpusReadyProps = {
 
 export function CorpusReady({
   ready,
+  isIndexing,
+  unavailable,
   documentCount,
   chunkCount,
   onOpenAsk,
@@ -16,7 +20,15 @@ export function CorpusReady({
   return (
     <section className={styles.corpusReady} aria-label="Corpus status">
       <p>
-        <strong>{ready ? "Corpus ready" : "Indexing corpus"}</strong>
+        <strong>
+          {unavailable
+            ? "Corpus unavailable"
+            : isIndexing
+              ? "Indexing corpus"
+              : ready
+                ? "Corpus ready"
+                : "Corpus empty"}
+        </strong>
         <span aria-hidden="true"> · </span>
         {documentCount} documents
         <span aria-hidden="true"> · </span>
