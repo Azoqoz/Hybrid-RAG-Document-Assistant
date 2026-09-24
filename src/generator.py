@@ -2,6 +2,7 @@ import os
 import re
 
 from dotenv import load_dotenv
+from src.extractive import ExtractiveAssembler, ExtractiveStatement
 
 
 class AnswerGenerator:
@@ -34,8 +35,10 @@ class AnswerGenerator:
         self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         self.api_key = self.openai_api_key
         self.model = self.openai_model
+        self.extractive_statements: list[ExtractiveStatement] = []
 
     def generate_answer(self, query: str, results: list[dict]) -> str:
+        self.extractive_statements = []
         if self._is_summary_question(query):
             summary_answer = self._generate_full_document_summary(query, results)
             if self.provider != "none" and not self._api_key_for_provider():
@@ -178,6 +181,15 @@ class AnswerGenerator:
     def _clean_fallback_answer(self, query: str, results: list[dict]) -> str:
         if self._is_summary_question(query):
             return self._generate_full_document_summary(query, results)
+
+        if self.provider == "none":
+            self.extractive_statements = ExtractiveAssembler().select(query, results)
+            if not self.extractive_statements:
+                return self.OUT_OF_DOCUMENT_ANSWER
+            text = " ".join(statement.text for statement in self.extractive_statements)
+            keys = {(s.source, s.chunk_id) for s in self.extractive_statements}
+            sources = [r for r in results if (r["source"], r["chunk_id"]) in keys]
+            return self._append_sources(text, sources)
 
         top_results = results[:3]
         sentences = self._extract_relevant_sentences(query, top_results)

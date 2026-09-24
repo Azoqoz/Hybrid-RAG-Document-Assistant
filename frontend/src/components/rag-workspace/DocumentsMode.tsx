@@ -1,10 +1,12 @@
 import { useRef } from "react";
+import type { ApiCapabilities } from "@/lib/rag-api";
 import { CorpusReady } from "./CorpusReady";
 import { DocumentSlab } from "./DocumentSlab";
 import type { SourceDocument } from "./types";
 import styles from "./rag-workspace.module.css";
 
 type DocumentsModeProps = {
+  demo?: ApiCapabilities;
   documents: SourceDocument[];
   documentCount: number;
   chunkCount: number;
@@ -19,6 +21,7 @@ type DocumentsModeProps = {
 };
 
 export function DocumentsMode({
+  demo,
   documents,
   documentCount,
   chunkCount,
@@ -32,14 +35,26 @@ export function DocumentsMode({
   onRetryConnection,
 }: DocumentsModeProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cannotUpload = isUploading || isConnecting || Boolean(connectionError);
+  const cannotUpload = isUploading || isConnecting || Boolean(connectionError) || Boolean(demo && documentCount);
 
   return (
     <main id="workspace-main" className={styles.documentsMode}>
       <section className={styles.documentsIntro}>
         <div>
-          <h1>Build the evidence base.</h1>
-          <p>Add source files, then ask across one indexed corpus.</p>
+          <h1>{demo ? "Try the guided RAG demo" : "Build the evidence base."}</h1>
+          {demo ? (
+            <>
+              <ol className={styles.demoSteps}>
+                <li>Download the sample document</li>
+                <li>Upload it here</li>
+                <li>Wait for indexing</li>
+                <li>Test the guided questions</li>
+              </ol>
+              <a className={styles.demoDownload} href={demo.sample_download_path} download={demo.sample_filename}>Download sample PDF <span aria-hidden="true">↓</span></a>
+              <p>Demo Mode accepts only this sample document.</p>
+              <p>{demo.retention_information}</p>
+            </>
+          ) : <p>Add source files, then ask across one indexed corpus.</p>}
         </div>
         <button
           className={styles.addDocumentsButton}
@@ -48,14 +63,14 @@ export function DocumentsMode({
           onClick={() => fileInputRef.current?.click()}
         >
           <span aria-hidden="true">＋</span>
-          {isUploading ? "Indexing…" : "Add documents"}
+          {isUploading ? "Uploading, processing & indexing…" : demo ? "Upload sample document" : "Add documents"}
         </button>
         <input
           className={styles.fileInput}
           ref={fileInputRef}
           type="file"
-          multiple
-          accept=".pdf,.docx,.pptx,.txt"
+          multiple={!demo}
+          accept={demo ? ".pdf" : ".pdf,.docx,.pptx,.txt"}
           disabled={cannotUpload}
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
@@ -85,13 +100,13 @@ export function DocumentsMode({
         ) : (
           <div className={styles.emptyDocuments}>
             <strong>{isConnecting ? "Preparing a corpus…" : "No documents yet."}</strong>
-            <span>Supported files: PDF, DOCX, PPTX, and TXT.</span>
+            <span>{demo ? "Download the Northstar handbook above, then upload the same PDF." : "Supported files: PDF, DOCX, PPTX, and TXT."}</span>
           </div>
         )}
       </div>
 
       <CorpusReady
-        ready={indexed && documentCount > 0}
+        ready={indexed && documentCount > 0 && (!demo || chunkCount > 0)}
         isIndexing={isUploading}
         unavailable={Boolean(connectionError)}
         documentCount={documentCount}

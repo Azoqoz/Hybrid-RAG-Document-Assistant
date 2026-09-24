@@ -1,5 +1,6 @@
 from src.services.contracts import (
     Citation,
+    Claim,
     QueryResponse,
     RetrievalResult,
     UploadPayload,
@@ -69,7 +70,7 @@ class QueryService:
         else:
             results = self.retrieval_service.retrieve_and_rerank(corpus, query)
 
-        answer = self.provider_service.generate(provider, query, results)
+        answer, statements = self.provider_service.generate_with_provenance(provider, query, results)
         citations = [
             self._citation_from_result(result, rerank_position)
             for rerank_position, result in enumerate(
@@ -78,6 +79,24 @@ class QueryService:
             )
         ]
         claims = self.claim_mapper.build(answer, citations, is_summary)
+        if statements:
+            # Cite only the chunk actually used for each extractive statement.
+            # Later reranked passages can contribute without changing retrieval.
+            selected_keys = {(s.source, s.chunk_id) for s in statements}
+            citations = [
+                self._citation_from_result(
+                    result, position,
+                    snippet=" … ".join(s.text for s in statements
+                                     if (s.source, s.chunk_id) == (result.filename, result.chunk_id)),
+                )
+                for position, result in enumerate(results, 1)
+                if (result.filename, result.chunk_id) in selected_keys
+            ]
+            claims = [Claim(
+                claim_id=f"claim-{index:03d}", text=statement.text,
+                citation_ids=[f"citation-{statement.chunk_id:06d}"],
+                support_status="source_excerpt",
+            ) for index, statement in enumerate(statements, 1)]
         return QueryResponse(
             corpus_id=corpus_id,
             query=query,
@@ -99,6 +118,7 @@ class QueryService:
         self,
         result: RetrievalResult,
         rerank_position: int,
+        snippet: str | None = None,
     ) -> Citation:
         text = " ".join(result.text.split())
         if len(text) > self.CITATION_SNIPPET_LENGTH:
@@ -108,7 +128,7 @@ class QueryService:
             citation_id=f"citation-{result.chunk_id:06d}",
             filename=result.filename,
             chunk_id=result.chunk_id,
-            snippet=text,
+            snippet=snippet if snippet is not None else text,
             semantic_score=result.semantic_score,
             keyword_score=result.keyword_score,
             hybrid_score=result.hybrid_score,

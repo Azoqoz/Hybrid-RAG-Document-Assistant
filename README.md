@@ -1,5 +1,109 @@
 # Hybrid RAG Document Assistant
 
+## Guided public Demo Mode
+
+Set `APP_MODE=demo` on the FastAPI backend to enable the guided Northstar demo.
+`APP_MODE=local` is the default and preserves arbitrary uploads, editable questions,
+and existing API provider behavior. Keep Local Mode local/private. The separate
+Streamlit app is unchanged and does not use `APP_MODE`.
+
+### Startup and configuration
+
+Install the backend with `pip install -r requirements.txt`, copy `.env.example` to
+`.env`, and select the app mode. From the repository root run:
+
+```bash
+uvicorn src.api.app:app --host 127.0.0.1 --port 8000 --workers 1
+```
+
+In a second terminal:
+
+```bash
+cd frontend
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+For production use `pnpm build` and `pnpm start`. Set `NEXT_PUBLIC_API_BASE_URL`
+in `frontend/.env.local` or hosting configuration before building; it defaults to
+`http://127.0.0.1:8000`. Set backend `CORS_ALLOWED_ORIGINS` to the exact frontend
+origin. Custom `CORS_ALLOWED_HEADERS` must include `Content-Type` and
+`X-Demo-Session-ID`. Public hosting requires HTTPS and a publicly reachable backend
+binding. Run **one worker/replica** because corpora and sessions are in memory.
+
+`RAG_INFERENCE_BACKEND=sentence_transformers` is the default. For ONNX deployment,
+install `requirements-render.txt` and set `RAG_INFERENCE_BACKEND=fastembed`.
+`LOW_MEMORY_MODE=true` releases models between operations, trading latency for lower
+retained model memory. Model files need to be downloaded/cached. Neither embeddings
+nor reranking requires a provider key. Existing provider/model environment settings
+remain available in Local Mode; the web UI still uses `provider="none"`.
+
+### Workflow and real RAG behavior
+
+1. Download `/demo/Northstar_Cloud_Operations_Service_Handbook_2026.pdf` from Documents.
+2. Upload the same PDF through the real multipart upload flow.
+3. Wait for synchronous parsing/indexing to complete; no invented progress percentages are shown.
+4. Open Ask and click one of the five guided questions to submit it immediately.
+5. Inspect the extractive answer, citations, passages, and retrieval/reranking scores.
+6. Use **Reset demo** to delete the owned corpus and return to the upload experience.
+
+`GET /capabilities` supplies the sample link, policy limits, retention information,
+and five exact backend-owned questions. Stable IDs: `demo_retention`, `demo_support`,
+`demo_api_usage`, `demo_private_deployment`, and `demo_incident`. Query requests use
+`POST /corpora/{id}/query` with `{"question_id":"demo_support"}`. The backend maps
+the ID to its question and forces `provider="none"`.
+
+Each click runs the existing hybrid retrieval → cross-encoder reranking → extractive
+answer → citation pipeline. These questions do not use summary routing. Answers are
+derived from uploaded text, **not canned answers or hosted generative LLM output**.
+There is no user API key, and the demo cannot invoke an external provider even when
+server keys exist. Retrieval weights, chunking, and model algorithms are unchanged.
+
+### Validation, isolation, and resource limits
+
+`src/services/demo_policy.py` pins the bundled sample's SHA-256. Only one PDF with
+exactly those bytes is accepted; validation happens before document parsing/indexing.
+Accepted uploads use the canonical filename for evidence. Deliberately replacing
+the sample requires updating the pinned digest and validating the five questions.
+
+The browser generates a UUID v4, stores it in `sessionStorage`, and sends it as
+`X-Demo-Session-ID`. Read/upload/query/delete require the owning session, and reloading
+reuses that session's corpus. The token is a bearer capability, not authentication.
+
+| Policy | Limit |
+|---|---|
+| Corpus per session | 1 |
+| Documents per corpus | 1, exact sample only |
+| File size | 64 KiB |
+| Entire demo POST/PUT/PATCH body | 80 KiB, bounded before multipart parsing |
+| Guided queries per session | 20 |
+| Accepted ingestion attempts per session | 5 |
+| Canonical question length | 256 characters |
+| Session lifetime | 24 hours from creation |
+| Retained sessions per process | 100 |
+
+Reset clears the corpus but does not renew usage quotas. Admitted queries and
+ingestion attempts count even if processing fails. Expired sessions/corpora are
+cleaned opportunistically on later session-bearing demo requests. Backend restarts
+clear all state. Demo operations are serialized to prevent query/upload/reset races;
+empty extraction or index failure clears partial corpus state.
+
+Public deployments also need reverse-proxy request-rate, connection, and timeout
+limits. Users can generate new session tokens, so session quotas are not an abuse-proof
+identity system. Global capacity may temporarily deny new sessions. Multiple workers
+or replicas require shared state and distributed limits before scaling out.
+
+The existing evidence UI shows filenames, chunk IDs, real text, and scores—not
+confidence or invented page/slide references. Claim links remain lexical-overlap
+heuristics over the first three result snippets; they do not formally verify every
+claim. Extractive answers may omit details from multi-part questions.
+
+Run `python -m unittest discover -s tests -v` for backend regressions. Demo tests use
+the actual PDF and FAISS/BM25/service flow with deterministic embedding/reranker test
+doubles. Run `pnpm lint` and `pnpm build` in `frontend/` for frontend checks.
+
+---
+
 A full-stack Retrieval-Augmented Generation application for asking source-grounded questions across PDF, DOCX, TXT, and PPTX documents using hybrid retrieval, reranking, structured citations, and inspectable evidence.
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
@@ -7,7 +111,7 @@ A full-stack Retrieval-Augmented Generation application for asking source-ground
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)
 ![RAG](https://img.shields.io/badge/AI-Hybrid%20RAG-purple)
 ![FAISS](https://img.shields.io/badge/Vector%20Search-FAISS-green)
-![Tests](https://img.shields.io/badge/Tests-52%20Passed-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-69%20Passed-brightgreen)
 ![Status](https://img.shields.io/badge/Status-Production-brightgreen)
 
 ---
@@ -757,7 +861,7 @@ python -m pytest --basetemp=.pytest_tmp -p no:cacheprovider
 Current result:
 
 ```text
-52 passed
+69 passed
 0 failed
 ```
 

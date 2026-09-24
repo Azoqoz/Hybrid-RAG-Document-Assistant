@@ -6,6 +6,36 @@ export type ApiDocumentMetadata = {
   chunk_count: number;
 };
 
+export type GuidedQuestion = { id: string; title: string; question: string };
+export type ApiCapabilities = {
+  app_mode: "demo" | "local";
+  demo_mode_available: boolean;
+  sample_filename: string;
+  sample_download_path: string;
+  guided_questions: GuidedQuestion[];
+  allowed_document_count: number;
+  max_upload_bytes: number;
+  max_queries_per_session: number;
+  max_uploads_per_session: number;
+  retention_seconds: number;
+  retention_information: string;
+  provider: "none";
+  answer_generation: string;
+  free_text_enabled: boolean;
+};
+
+let demoSessionId: string | undefined;
+
+export function configureDemoSession(enabled: boolean): void {
+  demoSessionId = undefined;
+  if (!enabled) return;
+  const key = "hybrid-rag-demo-session";
+  const stored = sessionStorage.getItem(key);
+  const valid = stored && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(stored);
+  demoSessionId = valid ? stored : crypto.randomUUID();
+  sessionStorage.setItem(key, demoSessionId);
+}
+
 export type ApiCorpus = {
   corpus_id: string;
   document_count: number;
@@ -105,6 +135,7 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: {
         Accept: "application/json",
+        ...(demoSessionId ? { "X-Demo-Session-ID": demoSessionId } : {}),
         ...init?.headers,
       },
     });
@@ -128,7 +159,23 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
 
-  return (await response.json()) as T;
+  return response.status === 204 ? (undefined as T) : (await response.json()) as T;
+}
+
+export function getCapabilities(): Promise<ApiCapabilities> {
+  return apiRequest<ApiCapabilities>("/capabilities");
+}
+
+export function deleteCorpus(corpusId: string): Promise<void> {
+  return apiRequest<void>(`/corpora/${encodeURIComponent(corpusId)}`, { method: "DELETE" });
+}
+
+export function queryGuidedQuestion(corpusId: string, questionId: string): Promise<ApiQueryResponse> {
+  return apiRequest<ApiQueryResponse>(`/corpora/${encodeURIComponent(corpusId)}/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question_id: questionId }),
+  });
 }
 
 export function createCorpus(): Promise<ApiCorpus> {

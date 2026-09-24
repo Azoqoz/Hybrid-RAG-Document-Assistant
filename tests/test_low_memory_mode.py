@@ -211,7 +211,7 @@ class LowMemoryModeTests(unittest.TestCase):
             files={
                 "files": (
                     "alpha.txt",
-                    b"alpha retrieval semantic document",
+                    b"Alpha retrieval explains semantic document search.",
                     "text/plain",
                 )
             },

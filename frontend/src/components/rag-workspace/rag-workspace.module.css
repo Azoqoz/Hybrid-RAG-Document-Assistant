@@ -1164,3 +1164,169 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+.demoNotice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+.demoNotice button {
+  appearance: none;
+  color: var(--ink-secondary);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-sans);
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) ease,
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.demoNotice button:not(:disabled):hover {
+  color: var(--ink);
+  background: var(--surface-muted);
+  border-color: var(--ink-secondary);
+}
+
+.demoNotice button:not(:disabled):active {
+  color: var(--ink);
+  background: var(--surface-strong);
+  border-color: var(--ink-secondary);
+  box-shadow: inset 0 -2px 0 var(--border-strong);
+}
+
+.demoNotice button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.demoNotice button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demoNotice button {
+    transition: none;
+  }
+}
+
+.demoSteps {
+  padding-left: 1.5rem;
+  line-height: 1.8;
+}
+
+.demoDownload {
+  display: inline-block;
+  min-height: 52px;
+  padding: var(--space-3) var(--space-5);
+  margin: var(--space-4) 0;
+  border: 2px solid var(--action);
+  color: var(--surface);
+  background: var(--action);
+  border-radius: 2px;
+  font-size: 16px;
+  font-weight: 760;
+  line-height: 1.5;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.guidedQuestions {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.guidedQuestions button {
+  display: grid;
+  min-width: 0;
+  min-height: 52px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.guidedQuestions button strong {
+  color: var(--ink-secondary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.guidedQuestions button > span {
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+.demoDownload:hover {
+  border-color: var(--action-hover);
+  background: var(--action-hover);
+}
+
+.demoDownload:active {
+  border-color: var(--ink);
+  background: var(--action-hover);
+  box-shadow: inset 0 -3px 0 var(--ink);
+}
+
+.demoDownload:focus-visible,
+.guidedQuestions button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.guidedQuestions button:not(:disabled):hover {
+  border-color: var(--action);
+  background: var(--surface-muted);
+}
+
+.guidedQuestions button:not(:disabled):active,
+.guidedQuestions button:focus {
+  border-color: var(--action);
+  background: var(--action-soft);
+  box-shadow: inset 4px 0 0 var(--action);
+}
+
+.guidedQuestions button:focus strong {
+  color: var(--action-hover);
+}
+
+.guidedQuestions button:disabled {
+  cursor: not-allowed;
+  color: var(--ink-secondary);
+  background: var(--surface-muted);
+  border-color: var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demoDownload,
+  .guidedQuestions button {
+    transition: none;
+  }
+}

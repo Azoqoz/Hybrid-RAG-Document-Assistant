@@ -4,12 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   apiErrorMessage,
   createCorpus,
+  configureDemoSession,
+  deleteCorpus,
+  getCapabilities,
   getCorpus,
   isCorpusNotFound,
   queryCorpus,
+  queryGuidedQuestion,
   RagApiError,
   uploadDocuments,
   type ApiCorpus,
+  type ApiCapabilities,
 } from "@/lib/rag-api";
 import {
   answerView as createAnswerView,
@@ -53,6 +58,8 @@ async function uploadAndLoadCorpus(corpusId: string, files: File[]): Promise<Api
 }
 
 export function RagWorkspace() {
+  const [capabilities, setCapabilities] = useState<ApiCapabilities>();
+  const demo = capabilities?.demo_mode_available ? capabilities : undefined;
   const [mode, setMode] = useState<WorkspaceMode>("documents");
   const [corpus, setCorpus] = useState<ApiCorpus | null>(null);
   const [isConnecting, setIsConnecting] = useState(true);
@@ -82,6 +89,9 @@ export function RagWorkspace() {
       setIsConnecting(true);
       setConnectionError(undefined);
       try {
+        const config = await getCapabilities();
+        configureDemoSession(config.demo_mode_available);
+        setCapabilities(config);
         const loaded = await loadOrCreateCorpus(existingId);
         setCorpus(loaded.corpus);
         if (loaded.recreated) {
@@ -159,6 +169,10 @@ export function RagWorkspace() {
 
   async function handleFilesSelected(files: File[]) {
     setUploadError(undefined);
+    if (demo && (files.length !== demo.allowed_document_count || files.some((file) => !/\.pdf$/i.test(file.name) || file.size > demo.max_upload_bytes))) {
+      setUploadError(`Upload only the sample PDF (maximum ${demo.max_upload_bytes.toLocaleString()} bytes).`);
+      return;
+    }
     const supported = files.filter(isSupportedDocument);
     const unsupported = files.filter((file) => !isSupportedDocument(file));
     const unsupportedRows = unsupported.map((file, index) => ({
@@ -212,8 +226,8 @@ export function RagWorkspace() {
     }
   }
 
-  async function groundAnswer() {
-    if (!question.trim() || isGrounding) return;
+  async function groundAnswer(questionId?: string) {
+    if ((demo ? !questionId : !question.trim()) || isGrounding || isUploading) return;
     if (!corpus?.indexed || corpus.document_count === 0) {
       setQueryError("Add and index at least one document before asking a question.");
       return;
@@ -223,7 +237,9 @@ export function RagWorkspace() {
     setQueryError(undefined);
     setSelectedEvidenceId(undefined);
     try {
-      const response = await queryCorpus(corpus.corpus_id, question, "none");
+      const response = demo && questionId
+        ? await queryGuidedQuestion(corpus.corpus_id, questionId)
+        : await queryCorpus(corpus.corpus_id, question, "none");
       const nextAnswer = createAnswerView(response);
       setAnswer(nextAnswer);
       setSelectedClaimId(nextAnswer.claims[0]?.id);
@@ -256,10 +272,35 @@ export function RagWorkspace() {
     }
   }
 
+  async function resetDemo() {
+    if (!corpus || isUploading || isGrounding || isConnecting) return;
+    setIsConnecting(true);
+    setConnectionError(undefined);
+    try {
+      try {
+        await deleteCorpus(corpus.corpus_id);
+      } catch (error) {
+        if (!isCorpusNotFound(error)) throw error;
+      }
+      setCorpus(null);
+      clearAnswer();
+      setTransientDocuments([]);
+      setUploadError(undefined);
+      setQueryError(undefined);
+      setQuestion("");
+      setMode("documents");
+      await connectCorpus();
+    } catch (error) {
+      setConnectionError(apiErrorMessage(error));
+    } finally {
+      setIsConnecting(false);
+    }
+  }
+
   const indexedCount = corpus?.indexed ? corpus.document_count : 0;
   const chunkCount = corpus?.chunk_count ?? 0;
   const askDisabled =
-    isConnecting || Boolean(connectionError) || !corpus?.indexed || !corpus.document_count;
+    isConnecting || isUploading || Boolean(connectionError) || !corpus?.indexed || !corpus.document_count || Boolean(demo && !chunkCount);
 
   return (
     <div className={styles.workspaceShell}>
@@ -270,12 +311,18 @@ export function RagWorkspace() {
         hasError={Boolean(connectionError)}
       />
       <WorkflowContext mode={mode} onModeChange={changeMode} />
+      {demo ? (
+        <div className={styles.demoNotice}>
+          <span>Demo Mode · Real retrieval and reranking · No-key extractive answers</span>
+          <button type="button" onClick={() => void resetDemo()} disabled={!corpus || isConnecting || isUploading || isGrounding}>Reset demo</button>
+        </div>
+      ) : null}
 
       <div className={styles.liveRegion} aria-live="polite" aria-atomic="true">
         {isConnecting
           ? "Connecting to the document corpus."
           : isUploading
-            ? "Indexing documents."
+            ? "Uploading, processing & indexing documents."
             : isGrounding
               ? "Grounding answer…"
               : connectionError || `${indexedCount} documents indexed.`}
@@ -283,6 +330,7 @@ export function RagWorkspace() {
 
       {mode === "documents" ? (
         <DocumentsMode
+          demo={demo}
           documents={documents}
           documentCount={corpus?.document_count ?? 0}
           chunkCount={chunkCount}
@@ -298,12 +346,14 @@ export function RagWorkspace() {
       ) : (
         <main id="workspace-main" className={styles.askMode}>
           <QuestionComposer
+            guidedQuestions={demo?.guided_questions}
+            onGuidedQuestion={(id) => void groundAnswer(id)}
             question={question}
             examples={exampleQuestions}
             isGrounding={isGrounding}
             disabled={askDisabled}
             onQuestionChange={setQuestion}
-            onSubmit={groundAnswer}
+            onSubmit={() => void groundAnswer()}
           />
 
           {connectionError ? (

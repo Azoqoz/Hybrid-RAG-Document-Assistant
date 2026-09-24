@@ -34,6 +34,13 @@ class QueryRequest(BaseModel):
         return stripped
 
 
+class DemoQueryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question_id: str = Field(min_length=1, max_length=64)
+    provider: Literal["none"] = "none"
+
+
 class RetrievalResultResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

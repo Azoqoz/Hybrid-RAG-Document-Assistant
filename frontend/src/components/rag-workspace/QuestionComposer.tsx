@@ -1,7 +1,10 @@
 import type { FormEvent } from "react";
+import type { GuidedQuestion } from "@/lib/rag-api";
 import styles from "./rag-workspace.module.css";
 
 type QuestionComposerProps = {
+  guidedQuestions?: GuidedQuestion[];
+  onGuidedQuestion?: (id: string) => void;
   question: string;
   examples: string[];
   isGrounding: boolean;
@@ -11,6 +14,8 @@ type QuestionComposerProps = {
 };
 
 export function QuestionComposer({
+  guidedQuestions,
+  onGuidedQuestion,
   question,
   examples,
   isGrounding,
@@ -21,6 +26,24 @@ export function QuestionComposer({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit();
+  }
+
+  if (guidedQuestions) {
+    return (
+      <section className={styles.composerSection} aria-labelledby="ask-heading">
+        <span className={styles.eyebrow}>Guided questions</span>
+        <h1 id="ask-heading">Explore the Northstar handbook.</h1>
+        <p>{isGrounding ? "Retrieving passages, reranking & preparing an extractive answer…" : disabled ? "Upload and index the sample PDF to unlock these questions." : "Choose a question to run the real RAG pipeline. Answers are extracted from the uploaded document."}</p>
+        <div className={styles.guidedQuestions}>
+          {guidedQuestions.map((item) => (
+            <button key={item.id} type="button" disabled={disabled || isGrounding} onClick={() => onGuidedQuestion?.(item.id)}>
+              <strong>{item.title}</strong>
+              <span>{item.question}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   return (
